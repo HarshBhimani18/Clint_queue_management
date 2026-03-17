@@ -55,6 +55,41 @@ export type PatientAppointment = {
   queueToken?: number | string
 }
 
+export type CreatePrescriptionPayload = {
+  appointmentId: string
+  name: string
+  dosage: string
+  duration: string
+  notes: string
+}
+
+export type Prescription = {
+  id: string
+  patientId?: string
+  patientName?: string
+  name: string
+  dosage: string
+  duration: string
+  notes: string
+}
+
+export type DoctorPatient = {
+  id: string
+  name: string
+  email: string
+  phone?: string
+}
+
+export type DoctorQueueItem = {
+  id: string
+  appointmentId?: string
+  appointmentDate?: string
+  timeSlot?: string
+  token?: number | string
+  status?: string
+  patientName?: string
+}
+
 export async function loginService(data: LoginPayload): Promise<LoginResponse> {
   try {
     const res = await api.post("/auth/login", data)
@@ -170,6 +205,122 @@ export async function getMyAppointmentsService(token: string): Promise<PatientAp
       const message =
         (error.response?.data as { message?: string } | undefined)?.message ??
         "Failed to fetch appointments."
+      throw new Error(message)
+    }
+
+    throw new Error("Server error. Try again.")
+  }
+}
+
+export async function createPrescriptionService(
+  data: CreatePrescriptionPayload,
+  token: string
+): Promise<void> {
+  try {
+    const { appointmentId, ...prescriptionData } = data
+    await api.post(`/prescriptions/${encodeURIComponent(appointmentId)}`, prescriptionData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const message =
+        (error.response?.data as { message?: string } | undefined)?.message ??
+        "Failed to add prescription."
+      throw new Error(message)
+    }
+
+    throw new Error("Server error. Try again.")
+  }
+}
+
+export async function getMyPrescriptionsService(token: string): Promise<Prescription[]> {
+  try {
+    const res = await api.get("/prescriptions/my", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+
+    const payload = res.data as Prescription[] | { prescriptions?: Prescription[] }
+
+    if (Array.isArray(payload)) {
+      return payload
+    }
+
+    if (Array.isArray(payload.prescriptions)) {
+      return payload.prescriptions
+    }
+
+    return []
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const message =
+        (error.response?.data as { message?: string } | undefined)?.message ??
+        "Failed to fetch prescriptions."
+      throw new Error(message)
+    }
+
+    throw new Error("Server error. Try again.")
+  }
+}
+
+export async function getDoctorPatientsService(token: string): Promise<DoctorPatient[]> {
+  try {
+    const res = await api.get("/doctor/patients", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+
+    const payload = res.data as DoctorPatient[] | { patients?: DoctorPatient[] }
+
+    if (Array.isArray(payload)) {
+      return payload
+    }
+
+    if (Array.isArray(payload.patients)) {
+      return payload.patients
+    }
+
+    return []
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const message =
+        (error.response?.data as { message?: string } | undefined)?.message ??
+        "Failed to fetch patients."
+      throw new Error(message)
+    }
+
+    throw new Error("Server error. Try again.")
+  }
+}
+
+export async function getDoctorQueueService(token: string): Promise<DoctorQueueItem[]> {
+  try {
+    const res = await api.get("/doctor/queue", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+
+    const payload = res.data as DoctorQueueItem[] | { queue?: DoctorQueueItem[] }
+
+    if (Array.isArray(payload)) {
+      return payload
+    }
+
+    if (Array.isArray(payload.queue)) {
+      return payload.queue
+    }
+
+    return []
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const message =
+        (error.response?.data as { message?: string } | undefined)?.message ??
+        "Failed to fetch doctor queue."
       throw new Error(message)
     }
 

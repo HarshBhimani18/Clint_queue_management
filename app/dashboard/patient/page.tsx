@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation"
 
 import {
   bookAppointmentService,
+  getMyPrescriptionsService,
   getMyAppointmentsService,
   type AuthUser,
   type BookAppointmentPayload,
   type PatientAppointment,
+  type Prescription,
 } from "../../api/authService"
 
 function getStoredUser(): AuthUser | null {
@@ -40,6 +42,8 @@ export default function PatientDashboardPage() {
   })
   const [appointments, setAppointments] = useState<PatientAppointment[]>([])
   const [appointmentsError, setAppointmentsError] = useState("")
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([])
+  const [prescriptionsError, setPrescriptionsError] = useState("")
 
   useEffect(() => {
     if (!user) {
@@ -65,6 +69,21 @@ export default function PatientDashboardPage() {
     } catch (error) {
       setAppointmentsError(
         error instanceof Error ? error.message : "Failed to fetch appointments."
+      )
+    }
+  }
+
+  const fetchPrescriptions = async () => {
+    const token = localStorage.getItem("token")
+    if (!token) return
+
+    setPrescriptionsError("")
+    try {
+      const list = await getMyPrescriptionsService(token)
+      setPrescriptions(list)
+    } catch (error) {
+      setPrescriptionsError(
+        error instanceof Error ? error.message : "Failed to fetch prescriptions."
       )
     }
   }
@@ -184,6 +203,52 @@ export default function PatientDashboardPage() {
                     <tr key={appointment.id} className="border-b">
                       <td className="py-2 pr-3">{appointment.appointmentDate.split("T")[0]}</td>
                       <td className="py-2 pr-3">{appointment.timeSlot}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        <section className="mt-6 rounded-xl border border-slate-200 bg-white p-4">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-base font-semibold text-slate-900">My Prescriptions</h2>
+            <button
+              type="button"
+              onClick={() => {
+                void fetchPrescriptions()
+              }}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-800 hover:bg-slate-50"
+            >
+              Load Prescriptions
+            </button>
+          </div>
+
+          {prescriptionsError ? (
+            <p className="mt-3 text-sm text-red-600">{prescriptionsError}</p>
+          ) : null}
+
+          {prescriptions.length === 0 ? (
+            <p className="mt-3 text-sm text-slate-600">No prescriptions found.</p>
+          ) : (
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full border-collapse text-left text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="py-2 pr-3 font-semibold text-slate-700">Name</th>
+                    <th className="py-2 pr-3 font-semibold text-slate-700">Dosage</th>
+                    <th className="py-2 pr-3 font-semibold text-slate-700">Duration</th>
+                    <th className="py-2 pr-3 font-semibold text-slate-700">Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {prescriptions.map((prescription) => (
+                    <tr key={prescription.id} className="border-b">
+                      <td className="py-2 pr-3">{prescription.name}</td>
+                      <td className="py-2 pr-3">{prescription.dosage}</td>
+                      <td className="py-2 pr-3">{prescription.duration}</td>
+                      <td className="py-2 pr-3">{prescription.notes}</td>
                     </tr>
                   ))}
                 </tbody>
